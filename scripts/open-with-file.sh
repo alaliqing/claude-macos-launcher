@@ -13,6 +13,7 @@ F=$(cat)
 # Resolve the claude binary location
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
 CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
+CLAUDE_NAME=$(basename "$CLAUDE")
 
 show_accessibility_help() {
   osascript -e 'display dialog "macos blocked file auto-typing.\n\non first use, allow finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nthen run \"Open Claude with File\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
@@ -56,6 +57,41 @@ launch_claude_in_dir() {
   return 0
 }
 
+launch_claude_and_wait_for_tab_process() {
+  local target_dir="$1"
+  local script_output
+  local cmd
+  cmd="cd $(printf '%q' "$target_dir") && $CLAUDE"
+  log_debug "launch_claude_and_wait_for_tab_process target_dir=$target_dir claude_name=$CLAUDE_NAME"
+
+  script_output=$(osascript - "$cmd" "$CLAUDE_NAME" <<'APPLESCRIPT' 2>/dev/null
+on run argv
+  set shellCommand to item 1 of argv
+  set expectedProcessName to item 2 of argv
+
+  tell application "Terminal"
+    set targetTab to do script shellCommand
+    activate
+
+    repeat 100 times
+      try
+        if expectedProcessName is in (processes of targetTab) then
+          return "ready"
+        end if
+      end try
+      delay 0.3
+    end repeat
+  end tell
+
+  return "timeout"
+end run
+APPLESCRIPT
+)
+
+  log_debug "launch_claude_and_wait_for_tab_process result=$script_output"
+  [ "$script_output" = "ready" ]
+}
+
 # Parse selected items into array (bash 3.2 compatible)
 ITEMS=()
 while IFS= read -r line; do
@@ -93,7 +129,7 @@ fi
 # Handle single folder
 if [ $FOLDER_COUNT -eq 1 ]; then
   log_debug "single folder selected path=${ITEMS[0]}"
-  if ! launch_claude_in_dir "${ITEMS[0]}"; then
+  if ! launch_claude_and_wait_for_tab_process "${ITEMS[0]}"; then
     show_launch_error
     exit 1
   fi
@@ -104,28 +140,14 @@ fi
 if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
-  EXISTING_CLAUDE_COUNT=$(pgrep -fc "$CLAUDE" 2>/dev/null || echo 0)
   PROMPT_TEXT=""
-  log_debug "files selected count=$FILE_COUNT dir=$DIRPATH existing_claude_count=$EXISTING_CLAUDE_COUNT"
+  log_debug "files selected count=$FILE_COUNT dir=$DIRPATH claude_name=$CLAUDE_NAME"
 
   # Launch Claude in Terminal
-  if ! launch_claude_in_dir "$DIRPATH"; then
+  if ! launch_claude_and_wait_for_tab_process "$DIRPATH"; then
     show_launch_error
     exit 1
   fi
-
-  # Wait for the newly launched Claude process instead of matching an older session.
-  for i in {1..100}; do
-    CURRENT_CLAUDE_COUNT=$(pgrep -fc "$CLAUDE" 2>/dev/null || echo 0)
-    log_debug "poll_claude iteration=$i current=$CURRENT_CLAUDE_COUNT existing=$EXISTING_CLAUDE_COUNT"
-    if [ "$CURRENT_CLAUDE_COUNT" -gt "$EXISTING_CLAUDE_COUNT" ] || [ "$CURRENT_CLAUDE_COUNT" -gt 0 ] && [ "$EXISTING_CLAUDE_COUNT" -eq 0 ]; then
-      # Claude is running, wait 1 more second for UI to be ready
-      log_debug "poll_claude matched iteration=$i current=$CURRENT_CLAUDE_COUNT"
-      sleep 1
-      break
-    fi
-    sleep 0.3
-  done
 
   # Give the Claude TUI a little extra time to focus its input before we paste.
   log_debug "sleep_before_paste seconds=0.2"
