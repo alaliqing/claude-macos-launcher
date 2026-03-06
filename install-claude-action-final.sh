@@ -45,8 +45,6 @@ fi
 # Check 3: Claude CLI
 echo -n "Checking Claude CLI... "
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
-[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null
-[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null
 
 if command -v claude &> /dev/null; then
     CLAUDE_PATH=$(which claude)
