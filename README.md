@@ -40,10 +40,27 @@ bash install.sh
 
 ### Open Claude with File
 
-1. Right-click any file or folder in Finder
-2. Select **Quick Actions** → **Open Claude with File**
-3. Terminal opens with Claude and `@filename ` already typed
-4. Add your prompt and press Enter
+This Quick Action supports three scenarios:
+
+**1. Single File**
+- Right-click a file → Quick Actions → Open Claude with File
+- Opens Claude and auto-types: `@filename.txt `
+- Ready for you to add your prompt
+
+**2. Multiple Files (2-10 files)**
+- Select 2-10 files (Command+click to multi-select)
+- Right-click → Quick Actions → Open Claude with File
+- Opens Claude and auto-types: `@file1.txt @file2.txt @file3.txt `
+- Perfect for: "Compare these files", "Summarize these documents"
+
+**3. Single Folder**
+- Right-click a folder → Quick Actions → Open Claude with File
+- Opens Claude in that folder's directory
+
+**Not Supported:**
+- More than 10 files (shows error)
+- Multiple folders (ambiguous which to open)
+- Mixed files and folders (unclear intent)
 
 ### Open Claude Here
 
