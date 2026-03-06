@@ -1,11 +1,110 @@
 #!/bin/bash
-# install-claude-action-v3.sh
+# install-claude-action.sh
 # Creates two ways to launch Claude with AUTOMATIC keyboard shortcut setup:
 # 1. "Open Claude with File" - Right-click file/folder (Quick Action)
-# 2. "Open Claude Here" - Keyboard shortcut ⌃⌥⌘C (Ctrl+Option+Cmd+C)
+# 2. "Open Claude Here" - Keyboard shortcut Command+Option+Shift+C
 set -e
 
-echo "Installing enhanced Claude Quick Actions..."
+echo "==============================================================="
+echo "Claude Quick Actions Installer"
+echo "==============================================================="
+echo ""
+
+# ============================================================================
+# PRE-FLIGHT CHECKS
+# ============================================================================
+echo "Running pre-flight checks..."
+echo ""
+
+ERRORS=0
+
+# Check 1: Python 3
+echo -n "Checking Python 3... "
+if command -v python3 &> /dev/null; then
+    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    echo "[OK] Found (version $PYTHON_VERSION)"
+else
+    echo "[FAIL] Not found"
+    echo ""
+    echo "ERROR: Python 3 is required but not found."
+    echo "Please install Xcode Command Line Tools:"
+    echo "  xcode-select --install"
+    echo ""
+    ERRORS=$((ERRORS + 1))
+fi
+
+# Check 2: Python standard libraries
+echo -n "Checking Python libraries... "
+if python3 -c "import plistlib, uuid, os" 2>/dev/null; then
+    echo "[OK] All required libraries available"
+else
+    echo "[FAIL] Missing required libraries"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# Check 3: Claude CLI
+echo -n "Checking Claude CLI... "
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
+[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null
+[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null
+
+if command -v claude &> /dev/null; then
+    CLAUDE_PATH=$(which claude)
+    echo "[OK] Found at $CLAUDE_PATH"
+else
+    echo "[WARN] Not found"
+    echo ""
+    echo "WARNING: Claude CLI is not installed."
+    echo "The Quick Actions will be installed, but won't work until you install Claude CLI."
+    echo ""
+    echo "To install Claude CLI, visit:"
+    echo "  https://github.com/anthropics/claude-code"
+    echo ""
+    echo "Or install via npm:"
+    echo "  npm install -g @anthropic-ai/claude-code"
+    echo ""
+    read -p "Continue installation anyway? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Installation cancelled."
+        exit 1
+    fi
+fi
+
+# Check 4: macOS version (optional)
+echo -n "Checking macOS version... "
+MACOS_VERSION=$(sw_vers -productVersion)
+echo "[OK] $MACOS_VERSION"
+
+# Check 5: Required system commands
+echo -n "Checking system commands... "
+MISSING_CMDS=""
+for cmd in osascript chmod mkdir rm killall defaults; do
+    if ! command -v $cmd &> /dev/null; then
+        MISSING_CMDS="$MISSING_CMDS $cmd"
+    fi
+done
+
+if [ -z "$MISSING_CMDS" ]; then
+    echo "[OK] All required commands available"
+else
+    echo "[FAIL] Missing commands:$MISSING_CMDS"
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+
+# Exit if critical errors found
+if [ $ERRORS -gt 0 ]; then
+    echo "[ERROR] Installation cannot continue due to missing dependencies."
+    echo "Please fix the errors above and try again."
+    exit 1
+fi
+
+echo "[SUCCESS] All pre-flight checks passed!"
+echo ""
+echo "Installing Claude Quick Actions..."
+echo ""
 
 # ============================================================================
 # ACTION 1: Open Claude with File (file/folder context menu)
@@ -213,7 +312,7 @@ chmod -R 755 "$HOME/Library/Services/Open Claude Here.workflow"
 # AUTOMATIC KEYBOARD SHORTCUT SETUP
 # ============================================================================
 echo ""
-echo "Setting up keyboard shortcut (⌘⌥⇧C) for 'Open Claude Here'..."
+echo "Setting up keyboard shortcut (Command+Option+Shift+C) for 'Open Claude Here'..."
 
 # Get the service bundle identifier
 SERVICE_NAME="Open Claude Here"
@@ -279,31 +378,31 @@ killall Finder 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
 echo ""
-echo "✓ Installation complete!"
+echo "[SUCCESS] Installation complete!"
 echo ""
-echo "═══════════════════════════════════════════════════════════════"
+echo "==============================================================="
 echo "Two Quick Actions have been installed:"
-echo "═══════════════════════════════════════════════════════════════"
+echo "==============================================================="
 echo ""
 echo "1. 'Open Claude with File'"
-echo "   → Right-click any file/folder → Quick Actions"
-echo "   → Opens Claude with file staged (NOT auto-sent)"
+echo "   -> Right-click any file/folder -> Quick Actions"
+echo "   -> Opens Claude with file staged (NOT auto-sent)"
 echo ""
 echo "2. 'Open Claude Here'"
-echo "   → Keyboard shortcut: ⌘⌥⇧C (Command+Option+Shift+C)"
-echo "   → Opens Claude in current Finder directory"
+echo "   -> Keyboard shortcut: Command+Option+Shift+C"
+echo "   -> Opens Claude in current Finder directory"
 echo ""
-echo "═══════════════════════════════════════════════════════════════"
+echo "==============================================================="
 echo "Usage:"
-echo "═══════════════════════════════════════════════════════════════"
+echo "==============================================================="
 echo ""
-echo "• Right-click file/folder → 'Open Claude with File'"
-echo "• In any Finder window, press ⌘⌥⇧C → Claude opens there!"
+echo "- Right-click file/folder -> 'Open Claude with File'"
+echo "- In any Finder window, press Command+Option+Shift+C -> Claude opens there!"
 echo ""
 echo "Note: If keyboard shortcut doesn't work immediately:"
 echo "  1. Log out and log back in (or restart)"
-echo "  2. Or manually set it in: System Settings → Keyboard →"
-echo "     Keyboard Shortcuts → Services → General → Open Claude Here"
+echo "  2. Or manually set it in: System Settings -> Keyboard ->"
+echo "     Keyboard Shortcuts -> Services -> General -> Open Claude Here"
 echo ""
-echo "═══════════════════════════════════════════════════════════════"
+echo "==============================================================="
 echo ""
