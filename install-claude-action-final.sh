@@ -37,19 +37,24 @@ lines = [
     '[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null',
     '[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null',
     'CLAUDE=$(which claude 2>/dev/null || echo "claude")',
-    # Build cd + claude command - MODIFIED to not auto-send
+    # Build cd + claude command
     'if [ -d "$F" ]; then',
-    '  # For directories, just cd into them',
+    '  # For directories, just cd into them and launch Claude',
     '  CMD="cd $(printf \'%q\' \"$F\") && $CLAUDE"',
+    '  osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
+    '  osascript -e "tell application \\"Terminal\\" to activate"',
     'else',
-    '  # For files, cd to directory and print @file instruction (not auto-send)',
+    '  # For files, use AppleScript to auto-type @filename',
     '  FILENAME=$(basename "$F")',
     '  DIRPATH=$(dirname "$F")',
-    '  CMD="cd $(printf \'%q\' \"$DIRPATH\") && echo \'File ready: @$(printf \'%q\' \"$FILENAME\")\' && $CLAUDE"',
+    '  CMD="cd $(printf \'%q\' \"$DIRPATH\") && $CLAUDE"',
+    '  # Launch Claude in Terminal',
+    '  osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
+    '  osascript -e "tell application \\"Terminal\\" to activate"',
+    '  # Wait for Claude to initialize, then auto-type the @filename',
+    '  sleep 2',
+    '  osascript -e "tell application \\"System Events\\" to keystroke \\"@$(printf \'%q\' \"$FILENAME\")\\""',
     'fi',
-    # Use osascript to open a new Terminal window and run the command
-    'osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
-    'osascript -e "tell application \\"Terminal\\" to activate"',
 ]
 
 script = '\n'.join(lines) + '\n'
