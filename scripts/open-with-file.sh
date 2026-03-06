@@ -103,7 +103,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   fi
 
   # Wait for the newly launched Claude process instead of matching an older session.
-  for i in {1..20}; do
+  for i in {1..100}; do
     CURRENT_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
     if [ "$CURRENT_CLAUDE_COUNT" -gt "$EXISTING_CLAUDE_COUNT" ] || [ "$CURRENT_CLAUDE_COUNT" -gt 0 ] && [ "$EXISTING_CLAUDE_COUNT" -eq 0 ]; then
       # Claude is running, wait 1 more second for UI to be ready
