@@ -66,7 +66,7 @@ echo -n "Checking Claude CLI... "
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
 
 if command -v claude &> /dev/null; then
-    CLAUDE_PATH=$(which claude)
+    CLAUDE_PATH=$(command -v claude)
     echo "[OK] Found at $CLAUDE_PATH"
 else
     echo "[WARN] Not found"

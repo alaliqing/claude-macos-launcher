@@ -14,9 +14,7 @@ FINDER_PATH=$(osascript -e "tell application \"Finder\" to if (count of Finder w
 
 # Resolve the claude binary location
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
-[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null
-[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null
-CLAUDE=$(which claude 2>/dev/null || echo "claude")
+CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
 
 # Build command to cd into Finder directory and launch Claude
 CMD="cd $(printf '%q' \"$FINDER_PATH\") && $CLAUDE"

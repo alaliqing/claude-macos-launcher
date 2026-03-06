@@ -12,9 +12,7 @@ F=$(cat)
 
 # Resolve the claude binary location
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
-[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null
-[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null
-CLAUDE=$(which claude 2>/dev/null || echo "claude")
+CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
 
 # Parse selected items into array (bash 3.2 compatible)
 ITEMS=()
@@ -63,14 +61,17 @@ if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
   CMD="cd $(printf '%q' "$DIRPATH") && $CLAUDE"
+  ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
+  EXISTING_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
 
   # Launch Claude in Terminal
   osascript -e "tell application \"Terminal\" to do script \"$CMD\""
   osascript -e "tell application \"Terminal\" to activate"
 
-  # Smart wait: check if claude process is running
+  # Wait for the newly launched Claude process instead of matching an older session.
   for i in {1..20}; do
-    if pgrep -f "claude" > /dev/null 2>&1; then
+    CURRENT_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
+    if [ "$CURRENT_CLAUDE_COUNT" -gt "$EXISTING_CLAUDE_COUNT" ] || [ "$CURRENT_CLAUDE_COUNT" -gt 0 ] && [ "$EXISTING_CLAUDE_COUNT" -eq 0 ]; then
       # Claude is running, wait 1 more second for UI to be ready
       sleep 1
       break
@@ -95,13 +96,16 @@ if [ $FILE_COUNT -gt 0 ]; then
 
     # Check if filepath needs quotes (contains spaces or special chars)
     if [[ "$FILEPATH" =~ [[:space:]] ]] || [[ ! "$FILEPATH" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
-      TEXT="@\"$FILEPATH\" "
+      TEXT="@\"$FILEPATH\""
     else
-      TEXT="@$FILEPATH "
+      TEXT="@$FILEPATH"
     fi
 
     # Use clipboard to preserve Unicode/Chinese characters
     echo -n "$TEXT" | pbcopy
     osascript -e "tell application \"System Events\" to keystroke \"v\" using command down"
+    osascript -e "tell application \"System Events\" to key code 49"
   done
+
+  printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
 fi
