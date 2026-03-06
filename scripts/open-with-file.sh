@@ -104,7 +104,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   done
 
   # Give the Claude TUI a little extra time to focus its input before we paste.
-  sleep 0.5
+  sleep 0.2
 
   # Build the full @file prompt once to avoid losing items to repeated paste events.
   for item in "${ITEMS[@]}"; do
@@ -137,5 +137,7 @@ if [ $FILE_COUNT -gt 0 ]; then
     exit 1
   fi
 
+  # Restore the user's clipboard only after paste has had time to complete.
+  sleep 0.2
   printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
 fi
