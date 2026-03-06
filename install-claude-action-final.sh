@@ -69,10 +69,28 @@ else
     fi
 fi
 
-# Check 4: macOS version (optional)
+# Check 4: macOS version
 echo -n "Checking macOS version... "
 MACOS_VERSION=$(sw_vers -productVersion)
-echo "[OK] $MACOS_VERSION"
+MACOS_MAJOR=$(echo $MACOS_VERSION | cut -d. -f1)
+MACOS_MINOR=$(echo $MACOS_VERSION | cut -d. -f2)
+
+if [ "$MACOS_MAJOR" -lt 10 ] || ([ "$MACOS_MAJOR" -eq 10 ] && [ "$MACOS_MINOR" -lt 15 ]); then
+    echo "[WARN] $MACOS_VERSION (may not be compatible)"
+    echo ""
+    echo "WARNING: Your macOS version may not be compatible."
+    echo "This script requires macOS 10.15 (Catalina) or later."
+    echo "Your version: $MACOS_VERSION"
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Installation cancelled."
+        exit 1
+    fi
+else
+    echo "[OK] $MACOS_VERSION"
+fi
 
 # Check 5: Required system commands
 echo -n "Checking system commands... "
