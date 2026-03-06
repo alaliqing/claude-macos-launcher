@@ -22,6 +22,17 @@ show_launch_error() {
   osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
 }
 
+set_clipboard_text() {
+  local text="$1"
+
+  printf '%s' "$text" | pbcopy
+  osascript - "$text" >/dev/null 2>&1 <<'APPLESCRIPT'
+on run argv
+  set the clipboard to item 1 of argv
+end run
+APPLESCRIPT
+}
+
 launch_claude_in_dir() {
   local target_dir="$1"
   local cmd
@@ -127,9 +138,8 @@ if [ $FILE_COUNT -gt 0 ]; then
     fi
     PROMPT_TEXT="${PROMPT_TEXT}${TEXT} "
   done
-
-  # Use clipboard to preserve Unicode/Chinese characters.
-  echo -n "$PROMPT_TEXT" | pbcopy
+  # Use both pbcopy and AppleScript to make sure the generated prompt stays in the system clipboard.
+  set_clipboard_text "$PROMPT_TEXT"
   if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
     show_accessibility_help
     exit 1
