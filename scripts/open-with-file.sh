@@ -104,7 +104,7 @@ fi
 if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
-  EXISTING_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
+  EXISTING_CLAUDE_COUNT=$(pgrep -fc "$CLAUDE" 2>/dev/null || echo 0)
   PROMPT_TEXT=""
   log_debug "files selected count=$FILE_COUNT dir=$DIRPATH existing_claude_count=$EXISTING_CLAUDE_COUNT"
 
@@ -116,7 +116,7 @@ if [ $FILE_COUNT -gt 0 ]; then
 
   # Wait for the newly launched Claude process instead of matching an older session.
   for i in {1..100}; do
-    CURRENT_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
+    CURRENT_CLAUDE_COUNT=$(pgrep -fc "$CLAUDE" 2>/dev/null || echo 0)
     log_debug "poll_claude iteration=$i current=$CURRENT_CLAUDE_COUNT existing=$EXISTING_CLAUDE_COUNT"
     if [ "$CURRENT_CLAUDE_COUNT" -gt "$EXISTING_CLAUDE_COUNT" ] || [ "$CURRENT_CLAUDE_COUNT" -gt 0 ] && [ "$EXISTING_CLAUDE_COUNT" -eq 0 ]; then
       # Claude is running, wait 1 more second for UI to be ready
