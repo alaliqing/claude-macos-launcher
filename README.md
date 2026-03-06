@@ -101,6 +101,22 @@ killall Finder
 - Uses AppleScript to open Terminal and launch Claude CLI
 - Smart process detection waits for Claude to start before auto-typing filename
 - Keyboard shortcut is automatically configured in system preferences
+- Supports files from different folders using smart absolute paths
+- Preserves Chinese/Unicode characters in filenames
+
+## Project Structure
+
+```
+claude-macos-launcher/
+├── install.sh              # Bootstrap installer (downloads & installs)
+├── uninstall.sh           # Removal script
+├── src/
+│   ├── workflow-file.py   # Generates "Open Claude with File" workflow
+│   └── workflow-here.py   # Generates "Open Claude Here" workflow
+└── scripts/
+    ├── open-with-file.sh  # Logic for file/folder Quick Action
+    └── open-here.sh       # Logic for keyboard shortcut Quick Action
+```
 
 ## Troubleshooting
 
