@@ -208,7 +208,7 @@ chmod -R 755 "$HOME/Library/Services/Open Claude Here.workflow"
 # AUTOMATIC KEYBOARD SHORTCUT SETUP
 # ============================================================================
 echo ""
-echo "Setting up keyboard shortcut (⌥⇧C) for 'Open Claude Here'..."
+echo "Setting up keyboard shortcut (⌘⌥⇧C) for 'Open Claude Here'..."
 
 # Get the service bundle identifier
 SERVICE_NAME="Open Claude Here"
@@ -218,8 +218,8 @@ PLIST_PATH="$HOME/Library/Preferences/pbs.plist"
 
 # Create or update the keyboard shortcut using defaults command
 # The format is: NSServicesStatus -> service identifier -> key_equivalent
-# Key combination: ⌥⇧C = Option(~) + Shift($) + C
-SHORTCUT_KEY="~\$c"
+# Key combination: ⌘⌥⇧C = Cmd(@) + Option(~) + Shift($) + C
+SHORTCUT_KEY="@~\$c"
 
 python3 << 'PYEOF3'
 import plistlib
@@ -254,9 +254,9 @@ if not service_key:
 
 # Set the keyboard shortcut
 if 'key_equivalent' not in data['NSServicesStatus'][service_key]:
-    data['NSServicesStatus'][service_key]['key_equivalent'] = '~$c'
+    data['NSServicesStatus'][service_key]['key_equivalent'] = '@~$c'
 else:
-    data['NSServicesStatus'][service_key]['key_equivalent'] = '~$c'
+    data['NSServicesStatus'][service_key]['key_equivalent'] = '@~$c'
 
 # Enable the service
 data['NSServicesStatus'][service_key]['enabled_context_menu'] = True
@@ -285,7 +285,7 @@ echo "   → Right-click any file/folder → Quick Actions"
 echo "   → Opens Claude with file staged (NOT auto-sent)"
 echo ""
 echo "2. 'Open Claude Here'"
-echo "   → Keyboard shortcut: ⌥⇧C (Option+Shift+C)"
+echo "   → Keyboard shortcut: ⌘⌥⇧C (Command+Option+Shift+C)"
 echo "   → Opens Claude in current Finder directory"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
@@ -293,7 +293,7 @@ echo "Usage:"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 echo "• Right-click file/folder → 'Open Claude with File'"
-echo "• In any Finder window, press ⌥⇧C → Claude opens there!"
+echo "• In any Finder window, press ⌘⌥⇧C → Claude opens there!"
 echo ""
 echo "Note: If keyboard shortcut doesn't work immediately:"
 echo "  1. Log out and log back in (or restart)"
