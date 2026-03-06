@@ -22,9 +22,16 @@ show_launch_error() {
   osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
 }
 
+LOG_FILE="/tmp/claude-macos-launcher.log"
+
+log_debug() {
+  printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG_FILE"
+}
+
 set_clipboard_text() {
   local text="$1"
 
+  log_debug "set_clipboard_text length=${#text}"
   printf '%s' "$text" | pbcopy
   osascript - "$text" >/dev/null 2>&1 <<'APPLESCRIPT'
 on run argv
@@ -37,11 +44,14 @@ launch_claude_in_dir() {
   local target_dir="$1"
   local cmd
   cmd="cd $(printf '%q' "$target_dir") && $CLAUDE"
+  log_debug "launch_claude_in_dir target_dir=$target_dir"
 
   if ! osascript -e "tell application \"Terminal\" to do script \"$cmd\"" >/dev/null 2>&1; then
+    log_debug "launch_claude_in_dir failed"
     return 1
   fi
 
+  log_debug "launch_claude_in_dir success"
   osascript -e "tell application \"Terminal\" to activate" >/dev/null 2>&1 || true
   return 0
 }
@@ -82,6 +92,7 @@ fi
 
 # Handle single folder
 if [ $FOLDER_COUNT -eq 1 ]; then
+  log_debug "single folder selected path=${ITEMS[0]}"
   if ! launch_claude_in_dir "${ITEMS[0]}"; then
     show_launch_error
     exit 1
@@ -95,6 +106,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   DIRPATH=$(dirname "${ITEMS[0]}")
   EXISTING_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
   PROMPT_TEXT=""
+  log_debug "files selected count=$FILE_COUNT dir=$DIRPATH existing_claude_count=$EXISTING_CLAUDE_COUNT"
 
   # Launch Claude in Terminal
   if ! launch_claude_in_dir "$DIRPATH"; then
@@ -105,8 +117,10 @@ if [ $FILE_COUNT -gt 0 ]; then
   # Wait for the newly launched Claude process instead of matching an older session.
   for i in {1..100}; do
     CURRENT_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
+    log_debug "poll_claude iteration=$i current=$CURRENT_CLAUDE_COUNT existing=$EXISTING_CLAUDE_COUNT"
     if [ "$CURRENT_CLAUDE_COUNT" -gt "$EXISTING_CLAUDE_COUNT" ] || [ "$CURRENT_CLAUDE_COUNT" -gt 0 ] && [ "$EXISTING_CLAUDE_COUNT" -eq 0 ]; then
       # Claude is running, wait 1 more second for UI to be ready
+      log_debug "poll_claude matched iteration=$i current=$CURRENT_CLAUDE_COUNT"
       sleep 1
       break
     fi
@@ -114,6 +128,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   done
 
   # Give the Claude TUI a little extra time to focus its input before we paste.
+  log_debug "sleep_before_paste seconds=0.2"
   sleep 0.2
 
   # Build the full @file prompt once to avoid losing items to repeated paste events.
@@ -138,10 +153,14 @@ if [ $FILE_COUNT -gt 0 ]; then
     fi
     PROMPT_TEXT="${PROMPT_TEXT}${TEXT} "
   done
+  log_debug "prompt_built text=$PROMPT_TEXT"
   # Use both pbcopy and AppleScript to make sure the generated prompt stays in the system clipboard.
   set_clipboard_text "$PROMPT_TEXT"
+  log_debug "send_cmd_v"
   if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
+    log_debug "send_cmd_v failed"
     show_accessibility_help
     exit 1
   fi
+  log_debug "send_cmd_v success"
 fi
