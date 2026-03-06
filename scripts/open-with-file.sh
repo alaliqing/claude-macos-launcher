@@ -82,7 +82,6 @@ fi
 if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
-  ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
   EXISTING_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
   PROMPT_TEXT=""
 
@@ -132,12 +131,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   # Use clipboard to preserve Unicode/Chinese characters.
   echo -n "$PROMPT_TEXT" | pbcopy
   if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
-    printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
     show_accessibility_help
     exit 1
   fi
-
-  # Restore the user's clipboard only after paste has had time to complete.
-  sleep 0.2
-  printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
 fi

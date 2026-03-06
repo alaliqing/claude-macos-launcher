@@ -149,6 +149,7 @@ This is usually a one-time macOS permission step.
 The script waits for Claude process to start. If your Mac is slow:
 - Wait a bit longer (max 6 seconds timeout)
 - If this is your first run, check the Accessibility steps above
+- If Claude asks you to trust the folder or the auto-paste misses, the file references stay in your clipboard so you can press `Command+V`
 - If it consistently fails after permissions are granted, you can manually type `@filename`
 
 ## Contributing
