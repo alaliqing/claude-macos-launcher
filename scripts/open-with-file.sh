@@ -131,7 +131,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   fi
 
   # Give the Claude TUI a little extra time to focus its input before we paste.
-  sleep 0.2
+  sleep 0.5
 
   # Build the full @file prompt once to avoid losing items to repeated paste events.
   for item in "${ITEMS[@]}"; do
