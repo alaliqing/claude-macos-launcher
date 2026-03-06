@@ -1,13 +1,32 @@
 #!/bin/bash
-# install-claude-action.sh
-# Creates two ways to launch Claude with AUTOMATIC keyboard shortcut setup:
-# 1. "Open Claude with File" - Right-click file/folder (Quick Action)
-# 2. "Open Claude Here" - Keyboard shortcut Command+Option+Shift+C
+# Claude macOS Launcher - Bootstrap Installer
+# https://github.com/alaliqing/claude-macos-launcher
 set -e
+
+REPO_URL="https://raw.githubusercontent.com/alaliqing/claude-macos-launcher/main"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==============================================================="
 echo "Claude Quick Actions Installer"
 echo "==============================================================="
+echo ""
+
+# ============================================================================
+# DETECT INSTALL MODE
+# ============================================================================
+if [ "$SCRIPT_DIR" = "/dev/fd" ] || [ ! -f "$SCRIPT_DIR/src/workflow-file.py" ]; then
+    # Running via curl | bash - need to download files
+    INSTALL_MODE="download"
+    TMPDIR=$(mktemp -d)
+    WORK_DIR="$TMPDIR"
+    echo "[INFO] Running in download mode (one-liner install)"
+else
+    # Running from cloned repo
+    INSTALL_MODE="local"
+    WORK_DIR="$SCRIPT_DIR"
+    echo "[INFO] Running in local mode (git clone)"
+fi
+
 echo ""
 
 # ============================================================================
@@ -119,307 +138,61 @@ fi
 
 echo "[SUCCESS] All pre-flight checks passed!"
 echo ""
+
+# ============================================================================
+# DOWNLOAD FILES (if in download mode)
+# ============================================================================
+if [ "$INSTALL_MODE" = "download" ]; then
+    echo "Downloading components..."
+    cd "$WORK_DIR"
+
+    mkdir -p src scripts
+
+    curl -fsSL "$REPO_URL/src/workflow-file.py" -o src/workflow-file.py || {
+        echo "[ERROR] Failed to download workflow-file.py"
+        exit 1
+    }
+
+    curl -fsSL "$REPO_URL/src/workflow-here.py" -o src/workflow-here.py || {
+        echo "[ERROR] Failed to download workflow-here.py"
+        exit 1
+    }
+
+    curl -fsSL "$REPO_URL/scripts/open-with-file.sh" -o scripts/open-with-file.sh || {
+        echo "[ERROR] Failed to download open-with-file.sh"
+        exit 1
+    }
+
+    curl -fsSL "$REPO_URL/scripts/open-here.sh" -o scripts/open-here.sh || {
+        echo "[ERROR] Failed to download open-here.sh"
+        exit 1
+    }
+
+    echo "[OK] All components downloaded"
+    echo ""
+fi
+
+# ============================================================================
+# INSTALL WORKFLOWS
+# ============================================================================
 echo "Installing Claude Quick Actions..."
 echo ""
 
-# ============================================================================
-# ACTION 1: Open Claude with File (file/folder context menu)
-# ============================================================================
-CONTENTS_DIR1="$HOME/Library/Services/Open Claude with File.workflow/Contents"
-rm -rf "$HOME/Library/Services/Open Claude with File.workflow"
-mkdir -p "$CONTENTS_DIR1"
+# Install "Open Claude with File"
+python3 "$WORK_DIR/src/workflow-file.py" "$WORK_DIR/scripts/open-with-file.sh"
 
-# Info.plist for file/folder action
-python3 -c "
-import plistlib, os
-p = {'NSServices': [{'NSMenuItem': {'default': 'Open Claude with File'}, 'NSMessage': 'runWorkflowAsService', 'NSRequiredContext': {'NSApplicationIdentifier': 'com.apple.finder'}, 'NSSendFileTypes': ['public.item', 'public.folder']}]}
-with open(os.path.expanduser('$CONTENTS_DIR1/Info.plist'), 'wb') as f:
-    plistlib.dump(p, f)
-"
-
-# document.wflow for file/folder action
-python3 << 'PYEOF1'
-import plistlib, uuid, os
-
-contents = os.path.expanduser('~') + '/Library/Services/Open Claude with File.workflow/Contents'
-
-lines = [
-    '#!/bin/bash',
-    '# Force UTF-8 encoding',
-    'export LANG=en_US.UTF-8',
-    'export LC_ALL=en_US.UTF-8',
-    'F=$(cat)',
-    '[ -z "$F" ] && exit 0',
-    # Resolve the claude binary location
-    'export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"',
-    '[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null',
-    '[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null',
-    'CLAUDE=$(which claude 2>/dev/null || echo "claude")',
-    '',
-    '# Parse selected items into array (bash 3.2 compatible)',
-    'ITEMS=()',
-    'while IFS= read -r line; do',
-    '  [ -n "$line" ] && ITEMS+=("$line")',
-    'done <<< "$F"',
-    'COUNT=${#ITEMS[@]}',
-    '',
-    '# Count files and folders',
-    'FILE_COUNT=0',
-    'FOLDER_COUNT=0',
-    'for item in "${ITEMS[@]}"; do',
-    '  if [ -d "$item" ]; then',
-    '    FOLDER_COUNT=$((FOLDER_COUNT + 1))',
-    '  elif [ -f "$item" ]; then',
-    '    FILE_COUNT=$((FILE_COUNT + 1))',
-    '  fi',
-    'done',
-    '',
-    '# Validation: Check for invalid scenarios',
-    'if [ $FILE_COUNT -gt 0 ] && [ $FOLDER_COUNT -gt 0 ]; then',
-    '  osascript -e "display dialog \\"Please select files OR folders, not both.\\" buttons {\\"OK\\"} default button 1 with icon caution with title \\"Claude Quick Actions\\""',
-    '  exit 1',
-    'fi',
-    '',
-    'if [ $FOLDER_COUNT -gt 1 ]; then',
-    '  osascript -e "display dialog \\"Please select only one folder.\\" buttons {\\"OK\\"} default button 1 with icon caution with title \\"Claude Quick Actions\\""',
-    '  exit 1',
-    'fi',
-    '',
-    'if [ $FILE_COUNT -gt 10 ]; then',
-    '  osascript -e "display dialog \\"Too many files selected (max 10). You selected $FILE_COUNT files.\\" buttons {\\"OK\\"} default button 1 with icon caution with title \\"Claude Quick Actions\\""',
-    '  exit 1',
-    'fi',
-    '',
-    '# Handle single folder',
-    'if [ $FOLDER_COUNT -eq 1 ]; then',
-    '  CMD="cd $(printf \'%q\' \"${ITEMS[0]}\") && $CLAUDE"',
-    '  osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
-    '  osascript -e "tell application \\"Terminal\\" to activate"',
-    '  exit 0',
-    'fi',
-    '',
-    '# Handle files (single or multiple)',
-    'if [ $FILE_COUNT -gt 0 ]; then',
-    '  # Get the directory from first file',
-    '  DIRPATH=$(dirname "${ITEMS[0]}")',
-    '  CMD="cd $(printf \'%q\' \"$DIRPATH\") && $CLAUDE"',
-    '  ',
-    '  # Launch Claude in Terminal',
-    '  osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
-    '  osascript -e "tell application \\"Terminal\\" to activate"',
-    '  ',
-    '  # Smart wait: check if claude process is running',
-    '  for i in {1..20}; do',
-    '    if pgrep -f "claude" > /dev/null 2>&1; then',
-    '      # Claude is running, wait 1 more second for UI to be ready',
-    '      sleep 1',
-    '      break',
-    '    fi',
-    '    sleep 0.3',
-    '  done',
-    '  ',
-    '  # Auto-type all @filenames using clipboard (preserves Unicode)',
-    '  # Use absolute paths for files in different directories',
-    '  for item in "${ITEMS[@]}"; do',
-    '    ITEMDIR=$(dirname "$item")',
-    '    FILENAME=$(basename "$item")',
-    '    ',
-    '    # Determine if we need absolute path or basename',
-    '    if [ "$ITEMDIR" = "$DIRPATH" ]; then',
-    '      # File is in the same directory we cd into, use basename',
-    '      FILEPATH="$FILENAME"',
-    '    else',
-    '      # File is in a different directory, use absolute path',
-    '      FILEPATH="$item"',
-    '    fi',
-    '    ',
-    '    # Check if filepath needs quotes (contains spaces or special chars)',
-    '    if [[ "$FILEPATH" =~ [[:space:]] ]] || [[ ! "$FILEPATH" =~ ^[a-zA-Z0-9./_-]+$ ]]; then',
-    '      TEXT="@\\"$FILEPATH\\" "',
-    '    else',
-    '      TEXT="@$FILEPATH "',
-    '    fi',
-    '    ',
-    '    # Use clipboard to preserve Unicode/Chinese characters',
-    '    echo -n "$TEXT" | pbcopy',
-    '    osascript -e "tell application \\"System Events\\" to keystroke \\"v\\" using command down"',
-    '  done',
-    'fi',
-]
-
-script = '\n'.join(lines) + '\n'
-assert '\r' not in script
-
-doc = {
-    'AMApplicationBuild': '523',
-    'AMApplicationVersion': '2.10',
-    'AMDocumentVersion': '2',
-    'actions': [{
-        'action': {
-            'AMAccepts': {'Container': 'List', 'Optional': True, 'Types': ['com.apple.cocoa.path']},
-            'AMProvides': {'Container': 'List', 'Types': ['com.apple.cocoa.path']},
-            'ActionBundlePath': '/System/Library/Automator/Run Shell Script.action',
-            'ActionName': 'Run Shell Script',
-            'ActionParameters': {
-                'COMMAND_STRING': script,
-                'CheckedForUserDefaultShell': True,
-                'inputMethod': 0,
-                'shell': '/bin/bash',
-                'source': '',
-            },
-            'BundleIdentifier': 'com.apple.RunShellScript',
-            'CFBundleVersion': '2.0.3',
-            'CanShowSelectedItemsWhenRun': False,
-            'CanShowWhenRun': True,
-            'Category': ['AMCategoryUtilities'],
-            'Class Name': 'RunShellScriptAction',
-            'InputUUID': str(uuid.uuid4()).upper(),
-            'OutputUUID': str(uuid.uuid4()).upper(),
-            'UUID': str(uuid.uuid4()).upper(),
-            'UnlocalizedApplications': ['Automator'],
-            'isViewVisible': True,
-            'location': '309.500000:253.000000',
-            'nibPath': '/System/Library/Automator/Run Shell Script.action/Contents/Resources/en.lproj/main.nib',
-        },
-        'isViewVisible': True,
-    }],
-    'connectors': {},
-    'workflowMetaData': {
-        'workflowTypeIdentifier': 'com.apple.Automator.servicesMenu',
-        'serviceInputTypeIdentifier': 'com.apple.Automator.fileSystemObject',
-        'serviceOutputTypeIdentifier': 'com.apple.Automator.nothing',
-        'serviceProcessesInput': False,
-        'serviceApplicationBundleID': 'com.apple.finder',
-    },
-}
-
-out = os.path.join(contents, 'document.wflow')
-with open(out, 'wb') as f:
-    plistlib.dump(doc, f, fmt=plistlib.FMT_BINARY)
-print('Action 1 created: Open Claude with File')
-PYEOF1
-
-chmod -R 755 "$HOME/Library/Services/Open Claude with File.workflow"
+# Install "Open Claude Here"
+python3 "$WORK_DIR/src/workflow-here.py" "$WORK_DIR/scripts/open-here.sh"
 
 # ============================================================================
-# ACTION 2: Open Claude Here (global service with keyboard shortcut)
-# ============================================================================
-CONTENTS_DIR2="$HOME/Library/Services/Open Claude Here.workflow/Contents"
-rm -rf "$HOME/Library/Services/Open Claude Here.workflow"
-mkdir -p "$CONTENTS_DIR2"
-
-# Info.plist for "Open Claude Here" - accepts NO input, works globally
-python3 -c "
-import plistlib, os
-p = {'NSServices': [{'NSMenuItem': {'default': 'Open Claude Here'}, 'NSMessage': 'runWorkflowAsService'}]}
-with open(os.path.expanduser('$CONTENTS_DIR2/Info.plist'), 'wb') as f:
-    plistlib.dump(p, f)
-"
-
-# document.wflow for "Open Claude Here"
-python3 << 'PYEOF2'
-import plistlib, uuid, os
-
-contents = os.path.expanduser('~') + '/Library/Services/Open Claude Here.workflow/Contents'
-
-lines = [
-    '#!/bin/bash',
-    # Get current Finder window path using AppleScript
-    'FINDER_PATH=$(osascript -e "tell application \\"Finder\\" to if (count of Finder windows) > 0 then get POSIX path of (target of front Finder window as alias)" 2>/dev/null)',
-    # Fallback to home directory if no Finder window is open
-    '[ -z "$FINDER_PATH" ] && FINDER_PATH="$HOME"',
-    # Resolve the claude binary location
-    'export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"',
-    '[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null',
-    '[ -f "$HOME/.zshrc" ]   && source "$HOME/.zshrc"   2>/dev/null',
-    'CLAUDE=$(which claude 2>/dev/null || echo "claude")',
-    # Build command to cd into Finder directory and launch Claude
-    'CMD="cd $(printf \'%q\' \\"$FINDER_PATH\\") && $CLAUDE"',
-    # Use osascript to open a new Terminal window and run the command
-    'osascript -e "tell application \\"Terminal\\" to do script \\"$CMD\\""',
-    'osascript -e "tell application \\"Terminal\\" to activate"',
-]
-
-script = '\n'.join(lines) + '\n'
-assert '\r' not in script
-
-doc = {
-    'AMApplicationBuild': '523',
-    'AMApplicationVersion': '2.10',
-    'AMDocumentVersion': '2',
-    'actions': [{
-        'action': {
-            'AMAccepts': {'Container': 'List', 'Optional': True, 'Types': ['com.apple.cocoa.string']},
-            'AMActionVersion': '2.0.3',
-            'AMProvides': {'Container': 'List', 'Types': ['com.apple.cocoa.string']},
-            'ActionBundlePath': '/System/Library/Automator/Run Shell Script.action',
-            'ActionName': 'Run Shell Script',
-            'ActionParameters': {
-                'COMMAND_STRING': script,
-                'CheckedForUserDefaultShell': True,
-                'inputMethod': 1,  # No input
-                'shell': '/bin/bash',
-                'source': '',
-            },
-            'BundleIdentifier': 'com.apple.RunShellScript',
-            'CFBundleVersion': '2.0.3',
-            'CanShowSelectedItemsWhenRun': False,
-            'CanShowWhenRun': True,
-            'Category': ['AMCategoryUtilities'],
-            'Class Name': 'RunShellScriptAction',
-            'InputUUID': str(uuid.uuid4()).upper(),
-            'OutputUUID': str(uuid.uuid4()).upper(),
-            'UUID': str(uuid.uuid4()).upper(),
-            'UnlocalizedApplications': ['Automator'],
-            'isViewVisible': True,
-            'location': '309.500000:253.000000',
-            'nibPath': '/System/Library/Automator/Run Shell Script.action/Contents/Resources/en.lproj/main.nib',
-        },
-        'isViewVisible': True,
-    }],
-    'connectors': {},
-    'workflowMetaData': {
-        'workflowTypeIdentifier': 'com.apple.Automator.servicesMenu',
-        'serviceInputTypeIdentifier': 'com.apple.Automator.nothing',
-        'serviceOutputTypeIdentifier': 'com.apple.Automator.nothing',
-        'serviceApplicationBundleID': 'com.apple.finder',
-    },
-}
-
-out = os.path.join(contents, 'document.wflow')
-with open(out, 'wb') as f:
-    plistlib.dump(doc, f, fmt=plistlib.FMT_BINARY)
-print('Action 2 created: Open Claude Here')
-PYEOF2
-
-chmod -R 755 "$HOME/Library/Services/Open Claude Here.workflow"
-
-# ============================================================================
-# Refresh Services
-# ============================================================================
-/System/Library/CoreServices/pbs -flush 2>/dev/null || true
-
-# ============================================================================
-# AUTOMATIC KEYBOARD SHORTCUT SETUP
+# SETUP KEYBOARD SHORTCUT
 # ============================================================================
 echo ""
 echo "Setting up keyboard shortcut (Command+Option+Shift+C) for 'Open Claude Here'..."
 
-# Get the service bundle identifier
-SERVICE_NAME="Open Claude Here"
-
-# Read existing keyboard shortcuts plist
-PLIST_PATH="$HOME/Library/Preferences/pbs.plist"
-
-# Create or update the keyboard shortcut using defaults command
-# The format is: NSServicesStatus -> service identifier -> key_equivalent
-# Key combination: ⌘⌥⇧C = Cmd(@) + Option(~) + Shift($) + C
-SHORTCUT_KEY="@~\$c"
-
-python3 << 'PYEOF3'
+python3 << 'PYEOF'
 import plistlib
 import os
-import subprocess
 
 plist_path = os.path.expanduser('~/Library/Preferences/pbs.plist')
 
@@ -443,15 +216,11 @@ for key in data.get('NSServicesStatus', {}):
 
 if not service_key:
     # Create the key format that macOS uses
-    # Format: (null) - Open Claude Here - runWorkflowAsService
     service_key = '(null) - Open Claude Here - runWorkflowAsService'
     data['NSServicesStatus'][service_key] = {}
 
-# Set the keyboard shortcut
-if 'key_equivalent' not in data['NSServicesStatus'][service_key]:
-    data['NSServicesStatus'][service_key]['key_equivalent'] = '@~$c'
-else:
-    data['NSServicesStatus'][service_key]['key_equivalent'] = '@~$c'
+# Set the keyboard shortcut: Command+Option+Shift+C
+data['NSServicesStatus'][service_key]['key_equivalent'] = '@~$c'
 
 # Enable the service
 data['NSServicesStatus'][service_key]['enabled_context_menu'] = True
@@ -461,13 +230,27 @@ data['NSServicesStatus'][service_key]['enabled_services_menu'] = True
 with open(plist_path, 'wb') as f:
     plistlib.dump(data, f)
 
-print("Keyboard shortcut configured in pbs.plist")
-PYEOF3
+print("[OK] Keyboard shortcut configured")
+PYEOF
 
-# Restart the services daemon to apply changes
+# ============================================================================
+# REFRESH SERVICES
+# ============================================================================
+/System/Library/CoreServices/pbs -flush 2>/dev/null || true
 killall Finder 2>/dev/null || true
 killall cfprefsd 2>/dev/null || true
 
+# ============================================================================
+# CLEANUP (if in download mode)
+# ============================================================================
+if [ "$INSTALL_MODE" = "download" ]; then
+    cd - > /dev/null
+    rm -rf "$TMPDIR"
+fi
+
+# ============================================================================
+# SUCCESS MESSAGE
+# ============================================================================
 echo ""
 echo "[SUCCESS] Installation complete!"
 echo ""
