@@ -1,0 +1,64 @@
+#!/bin/bash
+# uninstall.sh - Remove Claude Quick Actions from macOS
+set -e
+
+echo "==============================================================="
+echo "Claude Quick Actions Uninstaller"
+echo "==============================================================="
+echo ""
+
+# Check if workflows exist
+WORKFLOW1="$HOME/Library/Services/Open Claude with File.workflow"
+WORKFLOW2="$HOME/Library/Services/Open Claude Here.workflow"
+
+FOUND=0
+
+if [ -d "$WORKFLOW1" ]; then
+    echo "Found: Open Claude with File.workflow"
+    FOUND=1
+fi
+
+if [ -d "$WORKFLOW2" ]; then
+    echo "Found: Open Claude Here.workflow"
+    FOUND=1
+fi
+
+if [ $FOUND -eq 0 ]; then
+    echo "No Claude Quick Actions found. Nothing to uninstall."
+    exit 0
+fi
+
+echo ""
+read -p "Remove these Quick Actions? (y/N) " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Uninstall cancelled."
+    exit 0
+fi
+
+echo ""
+echo "Removing Quick Actions..."
+
+# Remove workflows
+if [ -d "$WORKFLOW1" ]; then
+    rm -rf "$WORKFLOW1"
+    echo "[OK] Removed: Open Claude with File"
+fi
+
+if [ -d "$WORKFLOW2" ]; then
+    rm -rf "$WORKFLOW2"
+    echo "[OK] Removed: Open Claude Here"
+fi
+
+# Refresh services
+echo ""
+echo "Refreshing services..."
+/System/Library/CoreServices/pbs -flush 2>/dev/null || true
+killall Finder 2>/dev/null || true
+
+echo ""
+echo "[SUCCESS] Uninstall complete!"
+echo ""
+echo "The Quick Actions have been removed from your system."
+echo ""
