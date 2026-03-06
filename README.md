@@ -135,13 +135,21 @@ npm install -g @anthropic-ai/claude-code
 
 ### Accessibility permission error
 
-On first use, macOS will ask for Accessibility permissions for keystroke automation. Click "Open System Settings" and grant permission.
+On first use, macOS may ask for Accessibility permission before it allows file auto-typing.
+
+If Claude opens but the filename is not inserted:
+- Open **System Settings** -> **Privacy & Security** -> **Accessibility**
+- Enable **Finder**
+- Run **Open Claude with File** again
+
+This is usually a one-time macOS permission step.
 
 ### File auto-typing doesn't work
 
 The script waits for Claude process to start. If your Mac is slow:
 - Wait a bit longer (max 6 seconds timeout)
-- If it consistently fails, you can manually type `@filename`
+- If this is your first run, check the Accessibility steps above
+- If it consistently fails after permissions are granted, you can manually type `@filename`
 
 ## Contributing
 

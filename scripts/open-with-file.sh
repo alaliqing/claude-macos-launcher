@@ -14,6 +14,27 @@ F=$(cat)
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.local/bin"
 CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
 
+show_accessibility_help() {
+  osascript -e 'display dialog "macos blocked file auto-typing.\n\non first use, allow finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nthen run \"Open Claude with File\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
+}
+
+show_launch_error() {
+  osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
+}
+
+launch_claude_in_dir() {
+  local target_dir="$1"
+  local cmd
+  cmd="cd $(printf '%q' "$target_dir") && $CLAUDE"
+
+  if ! osascript -e "tell application \"Terminal\" to do script \"$cmd\"" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  osascript -e "tell application \"Terminal\" to activate" >/dev/null 2>&1 || true
+  return 0
+}
+
 # Parse selected items into array (bash 3.2 compatible)
 ITEMS=()
 while IFS= read -r line; do
@@ -50,9 +71,10 @@ fi
 
 # Handle single folder
 if [ $FOLDER_COUNT -eq 1 ]; then
-  CMD="cd $(printf '%q' "${ITEMS[0]}") && $CLAUDE"
-  osascript -e "tell application \"Terminal\" to do script \"$CMD\""
-  osascript -e "tell application \"Terminal\" to activate"
+  if ! launch_claude_in_dir "${ITEMS[0]}"; then
+    show_launch_error
+    exit 1
+  fi
   exit 0
 fi
 
@@ -60,13 +82,15 @@ fi
 if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
-  CMD="cd $(printf '%q' "$DIRPATH") && $CLAUDE"
   ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
   EXISTING_CLAUDE_COUNT=$(pgrep -fc "claude" 2>/dev/null || echo 0)
+  PROMPT_TEXT=""
 
   # Launch Claude in Terminal
-  osascript -e "tell application \"Terminal\" to do script \"$CMD\""
-  osascript -e "tell application \"Terminal\" to activate"
+  if ! launch_claude_in_dir "$DIRPATH"; then
+    show_launch_error
+    exit 1
+  fi
 
   # Wait for the newly launched Claude process instead of matching an older session.
   for i in {1..20}; do
@@ -79,8 +103,10 @@ if [ $FILE_COUNT -gt 0 ]; then
     sleep 0.3
   done
 
-  # Auto-type all @filenames using clipboard (preserves Unicode)
-  # Use absolute paths for files in different directories
+  # Give the Claude TUI a little extra time to focus its input before we paste.
+  sleep 0.5
+
+  # Build the full @file prompt once to avoid losing items to repeated paste events.
   for item in "${ITEMS[@]}"; do
     ITEMDIR=$(dirname "$item")
     FILENAME=$(basename "$item")
@@ -100,12 +126,16 @@ if [ $FILE_COUNT -gt 0 ]; then
     else
       TEXT="@$FILEPATH"
     fi
-
-    # Use clipboard to preserve Unicode/Chinese characters
-    echo -n "$TEXT" | pbcopy
-    osascript -e "tell application \"System Events\" to keystroke \"v\" using command down"
-    osascript -e "tell application \"System Events\" to key code 49"
+    PROMPT_TEXT="${PROMPT_TEXT}${TEXT} "
   done
+
+  # Use clipboard to preserve Unicode/Chinese characters.
+  echo -n "$PROMPT_TEXT" | pbcopy
+  if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
+    printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
+    show_accessibility_help
+    exit 1
+  fi
 
   printf '%s' "$ORIGINAL_CLIPBOARD" | pbcopy
 fi
