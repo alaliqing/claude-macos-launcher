@@ -145,6 +145,9 @@ contents = os.path.expanduser('~') + '/Library/Services/Open Claude with File.wo
 
 lines = [
     '#!/bin/bash',
+    '# Force UTF-8 encoding',
+    'export LANG=en_US.UTF-8',
+    'export LC_ALL=en_US.UTF-8',
     'F=$(cat)',
     '[ -z "$F" ] && exit 0',
     # Resolve the claude binary location
