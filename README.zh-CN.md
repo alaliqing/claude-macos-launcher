@@ -127,10 +127,10 @@ claude-macos-launcher/
 ├── install.sh              # 安装入口脚本（下载并安装）
 ├── uninstall.sh            # 卸载脚本
 ├── src/
-│   ├── workflow-file.py    # 生成 “Open Claude with Selection” 工作流
+│   ├── workflow-selection.py    # 生成 “Open Claude with Selection” 工作流
 │   └── workflow-here.py    # 生成 “Open Claude Here” 工作流
 └── scripts/
-    ├── open-with-file.sh   # Finder 文件/文件夹服务逻辑
+    ├── open-with-selection.sh   # Finder 文件/文件夹服务逻辑
     └── open-here.sh        # 键盘快捷键服务逻辑
 ```
 

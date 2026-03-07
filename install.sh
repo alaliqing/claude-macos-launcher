@@ -14,7 +14,7 @@ echo ""
 # ============================================================================
 # DETECT INSTALL MODE
 # ============================================================================
-if [ "$SCRIPT_DIR" = "/dev/fd" ] || [ ! -f "$SCRIPT_DIR/src/workflow-file.py" ]; then
+if [ "$SCRIPT_DIR" = "/dev/fd" ] || [ ! -f "$SCRIPT_DIR/src/workflow-selection.py" ]; then
     # Running via curl | bash - need to download files
     INSTALL_MODE="download"
     TMPDIR=$(mktemp -d)
@@ -148,8 +148,8 @@ if [ "$INSTALL_MODE" = "download" ]; then
 
     mkdir -p src scripts
 
-    curl -fsSL "$REPO_URL/src/workflow-file.py" -o src/workflow-file.py || {
-        echo "[ERROR] Failed to download workflow-file.py"
+    curl -fsSL "$REPO_URL/src/workflow-selection.py" -o src/workflow-selection.py || {
+        echo "[ERROR] Failed to download workflow-selection.py"
         exit 1
     }
 
@@ -158,8 +158,8 @@ if [ "$INSTALL_MODE" = "download" ]; then
         exit 1
     }
 
-    curl -fsSL "$REPO_URL/scripts/open-with-file.sh" -o scripts/open-with-file.sh || {
-        echo "[ERROR] Failed to download open-with-file.sh"
+    curl -fsSL "$REPO_URL/scripts/open-with-selection.sh" -o scripts/open-with-selection.sh || {
+        echo "[ERROR] Failed to download open-with-selection.sh"
         exit 1
     }
 
@@ -182,7 +182,7 @@ echo ""
 rm -rf "$HOME/Library/Services/Open Claude with File.workflow" 2>/dev/null || true
 
 # Install "Open Claude with Selection"
-python3 "$WORK_DIR/src/workflow-file.py" "$WORK_DIR/scripts/open-with-file.sh"
+python3 "$WORK_DIR/src/workflow-selection.py" "$WORK_DIR/scripts/open-with-selection.sh"
 
 # Install "Open Claude Here"
 python3 "$WORK_DIR/src/workflow-here.py" "$WORK_DIR/scripts/open-here.sh"

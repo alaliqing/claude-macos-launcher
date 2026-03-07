@@ -127,10 +127,10 @@ claude-macos-launcher/
 ├── install.sh              # Bootstrap installer (downloads & installs)
 ├── uninstall.sh           # Removal script
 ├── src/
-│   ├── workflow-file.py   # Generates "Open Claude with Selection" workflow
+│   ├── workflow-selection.py   # Generates "Open Claude with Selection" workflow
 │   └── workflow-here.py   # Generates "Open Claude Here" workflow
 └── scripts/
-    ├── open-with-file.sh  # Logic for the Finder file/folder service
+    ├── open-with-selection.sh  # Logic for the Finder file/folder service
     └── open-here.sh       # Logic for the keyboard shortcut service
 ```
 
