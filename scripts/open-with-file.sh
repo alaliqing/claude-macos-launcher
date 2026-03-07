@@ -23,20 +23,6 @@ show_launch_error() {
   osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
 }
 
-LOG_FILE="/tmp/claude-macos-launcher.log"
-
-log_debug() {
-  printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG_FILE"
-}
-
-log_text_debug() {
-  local label="$1"
-  local text="$2"
-  local hex
-  hex=$(printf '%s' "$text" | od -An -t x1 | tr '\n' ' ' | sed 's/^ *//; s/ *$//')
-  log_debug "$label len=${#text} hex=$hex"
-}
-
 set_clipboard_text() {
   local text="$1"
 
@@ -136,6 +122,7 @@ fi
 if [ $FILE_COUNT -gt 0 ]; then
   # Get the directory from first file
   DIRPATH=$(dirname "${ITEMS[0]}")
+  ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
   PROMPT_TEXT=""
 
   # Launch Claude in Terminal
@@ -145,7 +132,7 @@ if [ $FILE_COUNT -gt 0 ]; then
   fi
 
   # Give the Claude TUI a little extra time to focus its input before we paste.
-  sleep 0.8
+  sleep 0.5
 
   # Build the full @file prompt once to avoid losing items to repeated paste events.
   for item in "${ITEMS[@]}"; do
@@ -167,15 +154,18 @@ if [ $FILE_COUNT -gt 0 ]; then
     else
       TEXT="@$FILEPATH"
     fi
-    PROMPT_TEXT="${PROMPT_TEXT}${TEXT} "
+    if [ -n "$PROMPT_TEXT" ]; then
+      PROMPT_TEXT="${PROMPT_TEXT} "
+    fi
+    PROMPT_TEXT="${PROMPT_TEXT}${TEXT}"
   done
+
   # Copy the full prompt once so the user can also paste it manually if needed.
-  log_text_debug "prompt_text" "$PROMPT_TEXT"
   set_clipboard_text "$PROMPT_TEXT"
-  CLIPBOARD_TEXT=$(pbpaste 2>/dev/null || true)
-  log_text_debug "clipboard_after_set" "$CLIPBOARD_TEXT"
   if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
     show_accessibility_help
     exit 1
   fi
+  sleep 0.2
+  set_clipboard_text "$ORIGINAL_CLIPBOARD"
 fi
