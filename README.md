@@ -44,13 +44,13 @@ This Quick Action supports three scenarios:
 
 **1. Single File**
 - Right-click a file → Quick Actions → Open Claude with File
-- Opens Claude and auto-types: `@filename.txt `
+- Opens Claude and auto-types: `@filename.txt`
 - Ready for you to add your prompt
 
 **2. Multiple Files (2-10 files)**
 - Select 2-10 files (Command+click to multi-select)
 - Right-click → Quick Actions → Open Claude with File
-- Opens Claude and auto-types: `@file1.txt @file2.txt @file3.txt `
+- Opens Claude and auto-types: `@file1.txt @file2.txt @file3.txt`
 - Perfect for: "Compare these files", "Summarize these documents"
 
 **3. Single Folder**
@@ -99,7 +99,7 @@ killall Finder
 
 - Creates macOS Quick Actions (Automator workflows) in `~/Library/Services/`
 - Uses AppleScript to open Terminal and launch Claude CLI
-- Smart process detection waits for Claude to start before auto-typing filename
+- Waits for the new Terminal tab to report that Claude is running before auto-typing file references
 - Keyboard shortcut is automatically configured in system preferences
 - Supports files from different folders using smart absolute paths
 - Preserves Chinese/Unicode characters in filenames
@@ -146,10 +146,9 @@ This is usually a one-time macOS permission step.
 
 ### File auto-typing doesn't work
 
-The script waits for Claude process to start. If your Mac is slow:
-- Wait a bit longer (max 6 seconds timeout)
+The script waits for the new Terminal tab to report that Claude is running before auto-typing. If your Mac is slow:
+- Wait a bit longer (max 30 seconds timeout)
 - If this is your first run, check the Accessibility steps above
-- If Claude asks you to trust the folder or the auto-paste misses, the file references stay in your clipboard so you can press `Command+V`
 - If it consistently fails after permissions are granted, you can manually type `@filename`
 
 ## Contributing
