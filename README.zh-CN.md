@@ -1,9 +1,9 @@
 <div align="center">
   <h1>Claude macOS Launcher</h1>
-  <p>在 macOS 上通过 Finder 服务从 Finder 启动 Claude CLI。</p>
+  <p>在 macOS 上通过服务快速启动 Claude CLI。</p>
   <p><a href="./README.md">English</a> | <strong>简体中文</strong></p>
   <p><a href="https://github.com/alaliqing/claude-macos-launcher/blob/main/LICENSE"><img src="https://img.shields.io/github/license/alaliqing/claude-macos-launcher?color=6b7280" alt="License"></a> <a href="https://www.apple.com/macos/"><img src="https://img.shields.io/badge/macos-18181b" alt="macOS"></a> <a href="https://github.com/anthropics/claude-code"><img src="https://img.shields.io/badge/claude%20cli-1f6feb" alt="Claude CLI"></a> <a href="https://github.com/alaliqing/claude-macos-launcher"><img src="https://img.shields.io/badge/finder%20services-5c6ac4" alt="Finder Services"></a></p>
-  <p>无需手动打开 Terminal 或输入文件引用，直接从 Finder 右键菜单启动 Claude。</p>
+  <p>无需手动打开 Terminal 或输入文件引用，直接通过快捷键右键菜单启动 Claude。</p>
 </div>
 
 ---
