@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script for "Open Claude with File" Quick Action
+# Script for the "Open Claude with File" Finder service
 # This script runs when you right-click a file/folder in Finder
 
 # Force UTF-8 encoding

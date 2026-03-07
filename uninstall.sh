@@ -1,9 +1,9 @@
 #!/bin/bash
-# uninstall.sh - Remove Claude Quick Actions from macOS
+# uninstall.sh - Remove Claude Finder Services from macOS
 set -e
 
 echo "==============================================================="
-echo "Claude Quick Actions Uninstaller"
+echo "Claude Finder Services Uninstaller"
 echo "==============================================================="
 echo ""
 
@@ -24,12 +24,12 @@ if [ -d "$WORKFLOW2" ]; then
 fi
 
 if [ $FOUND -eq 0 ]; then
-    echo "No Claude Quick Actions found. Nothing to uninstall."
+    echo "No Claude Finder Services found. Nothing to uninstall."
     exit 0
 fi
 
 echo ""
-read -p "Remove these Quick Actions? (y/N) " -n 1 -r
+read -p "Remove these Finder Services? (y/N) " -n 1 -r
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -38,7 +38,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo "Removing Quick Actions..."
+echo "Removing Finder Services..."
 
 # Remove workflows
 if [ -d "$WORKFLOW1" ]; then
@@ -60,5 +60,5 @@ killall Finder 2>/dev/null || true
 echo ""
 echo "[SUCCESS] Uninstall complete!"
 echo ""
-echo "The Quick Actions have been removed from your system."
+echo "The Finder Services have been removed from your system."
 echo ""

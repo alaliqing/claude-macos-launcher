@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script for "Open Claude Here" Quick Action
+# Script for the "Open Claude Here" Finder service
 # This script runs when you press the keyboard shortcut (Command+Option+Shift+C)
 
 # Force UTF-8 encoding

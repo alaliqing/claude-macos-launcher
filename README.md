@@ -1,10 +1,10 @@
 # Claude macOS Launcher
 
-Quick Actions for launching Claude CLI from Finder on macOS.
+Finder Services for launching Claude CLI from Finder on macOS.
 
 ## Features
 
-- **Open Claude with File**: Right-click any file or folder in Finder → Quick Actions → Auto-types `@filename` into Claude (ready for you to add context)
+- **Open Claude with File**: Right-click any file or folder in Finder → open it from the Finder context menu → Auto-types `@filename` into Claude (ready for you to add context)
 - **Open Claude Here**: Press `Command+Option+Shift+C` in any Finder window → Opens Claude in that directory
 
 ## Requirements
@@ -38,23 +38,25 @@ bash install.sh
 
 ## Usage
 
+These workflows are installed as macOS Finder Services. Depending on your macOS version and Finder configuration, they may appear under **Services** or **Quick Actions** in the Finder context menu.
+
 ### Open Claude with File
 
-This Quick Action supports three scenarios:
+This Finder Service supports three scenarios:
 
 **1. Single File**
-- Right-click a file → Quick Actions → Open Claude with File
+- Right-click a file in Finder → choose **Open Claude with File** from the context menu
 - Opens Claude and auto-types: `@filename.txt`
 - Ready for you to add your prompt
 
 **2. Multiple Files (2-10 files)**
 - Select 2-10 files (Command+click to multi-select)
-- Right-click → Quick Actions → Open Claude with File
+- Right-click in Finder → choose **Open Claude with File** from the context menu
 - Opens Claude and auto-types: `@file1.txt @file2.txt @file3.txt`
 - Perfect for: "Compare these files", "Summarize these documents"
 
 **3. Single Folder**
-- Right-click a folder → Quick Actions → Open Claude with File
+- Right-click a folder in Finder → choose **Open Claude with File** from the context menu
 - Opens Claude in that folder's directory
 
 **Not Supported:**
@@ -97,7 +99,7 @@ killall Finder
 
 ## How It Works
 
-- Creates macOS Quick Actions (Automator workflows) in `~/Library/Services/`
+- Creates macOS Finder Services (Automator workflows) in `~/Library/Services/`
 - Uses AppleScript to open Terminal and launch Claude CLI
 - Waits for the new Terminal tab to report that Claude is running before auto-typing file references
 - Keyboard shortcut is automatically configured in system preferences
@@ -114,8 +116,8 @@ claude-macos-launcher/
 │   ├── workflow-file.py   # Generates "Open Claude with File" workflow
 │   └── workflow-here.py   # Generates "Open Claude Here" workflow
 └── scripts/
-    ├── open-with-file.sh  # Logic for file/folder Quick Action
-    └── open-here.sh       # Logic for keyboard shortcut Quick Action
+    ├── open-with-file.sh  # Logic for the Finder file/folder service
+    └── open-here.sh       # Logic for the keyboard shortcut service
 ```
 
 ## Troubleshooting
