@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generates the "Open Claude with File" Automator workflow
+Generates the "Open Claude with Selection" Automator workflow
 """
 import plistlib
 import uuid
@@ -10,7 +10,7 @@ import sys
 
 def create_workflow(script_content):
     """Create the workflow plist structure"""
-    contents_dir = os.path.expanduser('~/Library/Services/Open Claude with File.workflow/Contents')
+    contents_dir = os.path.expanduser('~/Library/Services/Open Claude with Selection.workflow/Contents')
 
     # Remove existing workflow
     workflow_dir = os.path.dirname(contents_dir)
@@ -23,7 +23,7 @@ def create_workflow(script_content):
     # Create Info.plist
     info_plist = {
         'NSServices': [{
-            'NSMenuItem': {'default': 'Open Claude with File'},
+            'NSMenuItem': {'default': 'Open Claude with Selection'},
             'NSMessage': 'runWorkflowAsService',
             'NSRequiredContext': {'NSApplicationIdentifier': 'com.apple.finder'},
             'NSSendFileTypes': ['public.item', 'public.folder']
@@ -83,7 +83,7 @@ def create_workflow(script_content):
     # Set permissions
     os.chmod(workflow_dir, 0o755)
 
-    print('[OK] Created: Open Claude with File.workflow')
+    print('[OK] Created: Open Claude with Selection.workflow')
 
 
 if __name__ == '__main__':

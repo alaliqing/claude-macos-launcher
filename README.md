@@ -10,7 +10,7 @@
 
 ## Features
 
-- **Open Claude with File**: Right-click any file or folder in Finder → open it from the Finder context menu → Auto-types `@filename` into Claude (ready for you to add context)
+- **Open Claude with Selection**: Right-click selected files and folders in Finder → open it from the Finder context menu → Auto-types `@file` and `@folder` references into Claude
 - **Open Claude Here**: Press `Command+Option+Shift+C` in any Finder window → Opens Claude in that directory
 
 ## Requirements
@@ -46,29 +46,37 @@ bash install.sh
 
 These workflows are installed as macOS Finder Services. Depending on your macOS version and Finder configuration, they may appear under **Services** or **Quick Actions** in the Finder context menu.
 
-### Open Claude with File
+### Open Claude with Selection
 
-This Finder Service supports three scenarios:
+This Finder Service supports selected files, folders, or mixed selections:
 
 **1. Single File**
-- Right-click a file in Finder → choose **Open Claude with File** from the context menu
+- Right-click a file in Finder → choose **Open Claude with Selection** from the context menu
 - Opens Claude and auto-types: `@filename.txt`
 - Ready for you to add your prompt
 
-**2. Multiple Files (2-10 files)**
+**2. Multiple Files (2-10 items)**
 - Select 2-10 files (Command+click to multi-select)
-- Right-click in Finder → choose **Open Claude with File** from the context menu
+- Right-click in Finder → choose **Open Claude with Selection** from the context menu
 - Opens Claude and auto-types: `@file1.txt @file2.txt @file3.txt`
 - Perfect for: "Compare these files", "Summarize these documents"
 
 **3. Single Folder**
-- Right-click a folder in Finder → choose **Open Claude with File** from the context menu
-- Opens Claude in that folder's directory
+- Right-click a folder in Finder → choose **Open Claude with Selection** from the context menu
+- Opens Claude in that folder and includes a reference to the selected folder
+
+**4. Multiple Folders**
+- Select 2-10 folders in Finder
+- Right-click in Finder → choose **Open Claude with Selection** from the context menu
+- Opens Claude and stages the selected folder references together
+
+**5. Mixed Files and Folders**
+- Select files and folders together in Finder
+- Right-click in Finder → choose **Open Claude with Selection** from the context menu
+- Opens Claude and stages the full selection as context
 
 **Not Supported:**
-- More than 10 files (shows error)
-- Multiple folders (ambiguous which to open)
-- Mixed files and folders (unclear intent)
+- More than 10 selected items (shows error)
 
 ### Open Claude Here
 
@@ -97,7 +105,7 @@ curl -fsSL https://raw.githubusercontent.com/alaliqing/claude-macos-launcher/mai
 Or manually remove:
 
 ```bash
-rm -rf ~/Library/Services/"Open Claude with File.workflow"
+rm -rf ~/Library/Services/"Open Claude with Selection.workflow"
 rm -rf ~/Library/Services/"Open Claude Here.workflow"
 /System/Library/CoreServices/pbs -flush
 killall Finder
@@ -107,9 +115,9 @@ killall Finder
 
 - Creates macOS Finder Services (Automator workflows) in `~/Library/Services/`
 - Uses AppleScript to open Terminal and launch Claude CLI
-- Waits for the new Terminal tab to report that Claude is running before auto-typing file references
+- Waits for the new Terminal tab to report that Claude is running before auto-typing selection references
 - Keyboard shortcut is automatically configured in system preferences
-- Supports files from different folders using smart absolute paths
+- Supports files and folders from different locations using smart absolute paths
 - Preserves Chinese/Unicode characters in filenames
 
 ## Project Structure
@@ -119,7 +127,7 @@ claude-macos-launcher/
 ├── install.sh              # Bootstrap installer (downloads & installs)
 ├── uninstall.sh           # Removal script
 ├── src/
-│   ├── workflow-file.py   # Generates "Open Claude with File" workflow
+│   ├── workflow-file.py   # Generates "Open Claude with Selection" workflow
 │   └── workflow-here.py   # Generates "Open Claude Here" workflow
 └── scripts/
     ├── open-with-file.sh  # Logic for the Finder file/folder service
@@ -143,12 +151,12 @@ npm install -g @anthropic-ai/claude-code
 
 ### Accessibility permission error
 
-On first use, macOS may ask for Accessibility permission before it allows file auto-typing.
+On first use, macOS may ask for Accessibility permission before it allows selection auto-typing.
 
-If Claude opens but the filename is not inserted:
+If Claude opens but the selected references are not inserted:
 - Open **System Settings** -> **Privacy & Security** -> **Accessibility**
 - Enable **Finder**
-- Run **Open Claude with File** again
+- Run **Open Claude with Selection** again
 
 This is usually a one-time macOS permission step.
 
@@ -157,7 +165,7 @@ This is usually a one-time macOS permission step.
 The script waits for the new Terminal tab to report that Claude is running before auto-typing. If your Mac is slow:
 - Wait a bit longer (max 30 seconds timeout)
 - If this is your first run, check the Accessibility steps above
-- If it consistently fails after permissions are granted, you can manually type `@filename`
+- If it consistently fails after permissions are granted, you can manually type `@filename` or `@folder`
 
 ## Contributing
 

@@ -10,7 +10,7 @@
 
 ## 功能
 
-- **Open Claude with File**：在 Finder 中右键文件或文件夹，从上下文菜单打开该服务后，会自动将 `@filename` 输入到 Claude 中，方便你继续补充上下文
+- **Open Claude with Selection**：在 Finder 中右键选中的文件和文件夹，从上下文菜单打开该服务后，会自动将 `@file` 和 `@folder` 引用输入到 Claude 中
 - **Open Claude Here**：在任意 Finder 窗口中按 `Command+Option+Shift+C`，直接在当前目录打开 Claude
 
 ## 环境要求
@@ -46,29 +46,37 @@ bash install.sh
 
 这些工作流会被安装为 macOS Finder 服务。根据你的 macOS 版本和 Finder 配置，它们可能显示在 Finder 右键菜单的 **Services** 或 **Quick Actions** 中。
 
-### Open Claude with File
+### Open Claude with Selection
 
-这个 Finder 服务支持以下三种场景：
+这个 Finder 服务支持文件、文件夹和混合选择：
 
 **1. 单个文件**
-- 在 Finder 中右键一个文件，选择 **Open Claude with File**
+- 在 Finder 中右键一个文件，选择 **Open Claude with Selection**
 - 会打开 Claude，并自动输入：`@filename.txt`
 - 接着你可以继续输入 prompt
 
-**2. 多个文件（2-10 个）**
+**2. 多个文件（2-10 个选中项）**
 - 选中 2 到 10 个文件（可通过 Command+点选多选）
-- 在 Finder 中右键，选择 **Open Claude with File**
+- 在 Finder 中右键，选择 **Open Claude with Selection**
 - 会打开 Claude，并自动输入：`@file1.txt @file2.txt @file3.txt`
 - 适合用于：比较文件、总结文档、做跨文件分析
 
 **3. 单个文件夹**
-- 在 Finder 中右键一个文件夹，选择 **Open Claude with File**
-- 会在该文件夹目录中打开 Claude
+- 在 Finder 中右键一个文件夹，选择 **Open Claude with Selection**
+- 会在该文件夹中打开 Claude，并自动附带这个文件夹的引用
+
+**4. 多个文件夹**
+- 在 Finder 中选中 2 到 10 个文件夹
+- 在 Finder 中右键，选择 **Open Claude with Selection**
+- 会打开 Claude，并一起附带这些文件夹引用
+
+**5. 文件和文件夹混合**
+- 在 Finder 中同时选中文件和文件夹
+- 在 Finder 中右键，选择 **Open Claude with Selection**
+- 会打开 Claude，并把整组选中项作为上下文附带进去
 
 **不支持的情况：**
-- 超过 10 个文件（会提示错误）
-- 多个文件夹（无法判断应打开哪个目录）
-- 文件和文件夹混选（意图不明确）
+- 超过 10 个选中项（会提示错误）
 
 ### Open Claude Here
 
@@ -97,7 +105,7 @@ curl -fsSL https://raw.githubusercontent.com/alaliqing/claude-macos-launcher/mai
 或者手动删除：
 
 ```bash
-rm -rf ~/Library/Services/"Open Claude with File.workflow"
+rm -rf ~/Library/Services/"Open Claude with Selection.workflow"
 rm -rf ~/Library/Services/"Open Claude Here.workflow"
 /System/Library/CoreServices/pbs -flush
 killall Finder
@@ -107,9 +115,9 @@ killall Finder
 
 - 在 `~/Library/Services/` 中创建 macOS Finder 服务（Automator workflows）
 - 使用 AppleScript 打开 Terminal 并启动 Claude CLI
-- 等待新建的 Terminal 标签页报告 Claude 已启动后，再自动输入文件引用
+- 等待新建的 Terminal 标签页报告 Claude 已启动后，再自动输入选中项引用
 - 自动在系统设置中配置快捷键
-- 支持跨目录文件，并自动处理绝对路径
+- 支持跨目录的文件和文件夹，并自动处理绝对路径
 - 支持中文和其他 Unicode 文件名
 
 ## 项目结构
@@ -119,7 +127,7 @@ claude-macos-launcher/
 ├── install.sh              # 安装入口脚本（下载并安装）
 ├── uninstall.sh            # 卸载脚本
 ├── src/
-│   ├── workflow-file.py    # 生成 “Open Claude with File” 工作流
+│   ├── workflow-file.py    # 生成 “Open Claude with Selection” 工作流
 │   └── workflow-here.py    # 生成 “Open Claude Here” 工作流
 └── scripts/
     ├── open-with-file.sh   # Finder 文件/文件夹服务逻辑
@@ -145,19 +153,19 @@ npm install -g @anthropic-ai/claude-code
 
 首次使用时，macOS 可能会要求授予辅助功能权限，之后才允许自动输入文件引用。
 
-如果 Claude 已经打开，但文件名没有自动输入：
+如果 Claude 已经打开，但选中项引用没有自动输入：
 - 打开 **系统设置** -> **隐私与安全性** -> **辅助功能**
 - 启用 **Finder**
-- 再次运行 **Open Claude with File**
+- 再次运行 **Open Claude with Selection**
 
 这通常只是一次性的 macOS 权限步骤。
 
 ### 文件自动输入失败
 
-脚本会等待新建的 Terminal 标签页报告 Claude 已启动，然后再自动输入文件引用。如果你的 Mac 较慢：
+脚本会等待新建的 Terminal 标签页报告 Claude 已启动，然后再自动输入选中项引用。如果你的 Mac 较慢：
 - 可以多等一会儿（最长约 30 秒超时）
 - 如果是第一次运行，先检查上面的辅助功能权限步骤
-- 如果在授权后仍持续失败，可以手动输入 `@filename`
+- 如果在授权后仍持续失败，可以手动输入 `@filename` 或 `@folder`
 
 ## 参与贡献
 

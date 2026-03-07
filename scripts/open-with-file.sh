@@ -1,6 +1,6 @@
 #!/bin/bash
-# Script for the "Open Claude with File" Finder service
-# This script runs when you right-click a file/folder in Finder
+# Script for the "Open Claude with Selection" Finder service
+# This script runs when you right-click selected items in Finder
 
 # Force UTF-8 encoding
 export LANG=en_US.UTF-8
@@ -16,11 +16,11 @@ CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
 CLAUDE_NAME=$(basename "$CLAUDE")
 
 show_accessibility_help() {
-  osascript -e 'display dialog "macos blocked file auto-typing.\n\non first use, allow finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nthen run \"Open Claude with File\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
+  osascript -e 'display dialog "macos blocked selection auto-typing.\n\non first use, allow finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nthen run \"Open Claude with Selection\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
 }
 
 show_launch_error() {
-  osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Quick Actions"'
+  osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
 }
 
 set_clipboard_text() {
@@ -75,97 +75,105 @@ APPLESCRIPT
   [ "$script_output" = "ready" ]
 }
 
+common_parent_dir() {
+  local common="$1"
+  shift
+
+  while [ $# -gt 0 ]; do
+    local path="$1"
+    shift
+
+    while [ "${path#"$common"}" = "$path" ]; do
+      common=$(dirname "$common")
+      if [ "$common" = "/" ]; then
+        break
+      fi
+    done
+  done
+
+  printf '%s\n' "$common"
+}
+
 # Parse selected items into array (bash 3.2 compatible)
 ITEMS=()
 while IFS= read -r line; do
   [ -n "$line" ] && ITEMS+=("$line")
 done <<< "$F"
-COUNT=${#ITEMS[@]}
-
-# Count files and folders
-FILE_COUNT=0
-FOLDER_COUNT=0
+VALID_ITEMS=()
 for item in "${ITEMS[@]}"; do
-  if [ -d "$item" ]; then
-    FOLDER_COUNT=$((FOLDER_COUNT + 1))
-  elif [ -f "$item" ]; then
-    FILE_COUNT=$((FILE_COUNT + 1))
+  if [ -d "$item" ] || [ -f "$item" ]; then
+    VALID_ITEMS+=("$item")
   fi
 done
 
-# Validation: Check for invalid scenarios
-if [ $FILE_COUNT -gt 0 ] && [ $FOLDER_COUNT -gt 0 ]; then
-  osascript -e "display dialog \"Please select files OR folders, not both.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Quick Actions\""
+COUNT=${#VALID_ITEMS[@]}
+[ "$COUNT" -eq 0 ] && exit 0
+
+if [ "$COUNT" -gt 10 ]; then
+  osascript -e "display dialog \"Too many items selected (max 10). You selected $COUNT items.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Finder Services\""
   exit 1
 fi
 
-if [ $FOLDER_COUNT -gt 1 ]; then
-  osascript -e "display dialog \"Please select only one folder.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Quick Actions\""
+SELECTION_ROOTS=()
+for item in "${VALID_ITEMS[@]}"; do
+  if [ -d "$item" ]; then
+    SELECTION_ROOTS+=("$(dirname "$item")")
+  elif [ -f "$item" ]; then
+    SELECTION_ROOTS+=("$(dirname "$item")")
+  fi
+done
+
+DIRPATH="${SELECTION_ROOTS[0]}"
+if [ "$COUNT" -eq 1 ] && [ -d "${VALID_ITEMS[0]}" ]; then
+  DIRPATH="${VALID_ITEMS[0]}"
+elif [ "${#SELECTION_ROOTS[@]}" -gt 1 ]; then
+  DIRPATH=$(common_parent_dir "$DIRPATH" "${SELECTION_ROOTS[@]:1}")
+fi
+
+ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
+PROMPT_TEXT=""
+
+# Launch Claude in Terminal
+if ! launch_claude_and_wait_for_tab_process "$DIRPATH"; then
+  show_launch_error
   exit 1
 fi
 
-if [ $FILE_COUNT -gt 10 ]; then
-  osascript -e "display dialog \"Too many files selected (max 10). You selected $FILE_COUNT files.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Quick Actions\""
-  exit 1
-fi
+# Give the Claude TUI a little extra time to focus its input before we paste.
+sleep 0.5
 
-# Handle single folder
-if [ $FOLDER_COUNT -eq 1 ]; then
-  if ! launch_claude_and_wait_for_tab_process "${ITEMS[0]}"; then
-    show_launch_error
-    exit 1
-  fi
-  exit 0
-fi
+# Build the full @selection prompt once to avoid losing items to repeated paste events.
+for item in "${VALID_ITEMS[@]}"; do
+  ITEMDIR=$(dirname "$item")
+  ITEMNAME=$(basename "$item")
 
-# Handle files (single or multiple)
-if [ $FILE_COUNT -gt 0 ]; then
-  # Get the directory from first file
-  DIRPATH=$(dirname "${ITEMS[0]}")
-  ORIGINAL_CLIPBOARD=$(pbpaste 2>/dev/null || true)
-  PROMPT_TEXT=""
-
-  # Launch Claude in Terminal
-  if ! launch_claude_and_wait_for_tab_process "$DIRPATH"; then
-    show_launch_error
-    exit 1
+  # Determine if we need absolute path or basename
+  if [ "$COUNT" -eq 1 ] && [ -d "$item" ] && [ "$DIRPATH" = "$item" ]; then
+    ITEMPATH="$item"
+  elif [ "$ITEMDIR" = "$DIRPATH" ]; then
+    ITEMPATH="$ITEMNAME"
+  else
+    ITEMPATH="$item"
   fi
 
-  # Give the Claude TUI a little extra time to focus its input before we paste.
-  sleep 0.5
-
-  # Build the full @file prompt once to avoid losing items to repeated paste events.
-  for item in "${ITEMS[@]}"; do
-    ITEMDIR=$(dirname "$item")
-    FILENAME=$(basename "$item")
-
-    # Determine if we need absolute path or basename
-    if [ "$ITEMDIR" = "$DIRPATH" ]; then
-      # File is in the same directory we cd into, use basename
-      FILEPATH="$FILENAME"
-    else
-      # File is in a different directory, use absolute path
-      FILEPATH="$item"
-    fi
-
-    # Check if filepath needs quotes (contains spaces or special chars)
-    if [[ "$FILEPATH" =~ [[:space:]] ]] || [[ ! "$FILEPATH" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
-      TEXT="@\"$FILEPATH\""
-    else
-      TEXT="@$FILEPATH"
-    fi
-    if [ -n "$PROMPT_TEXT" ]; then
-      PROMPT_TEXT="${PROMPT_TEXT} "
-    fi
-    PROMPT_TEXT="${PROMPT_TEXT}${TEXT}"
-  done
-
-  # Copy the full prompt once so the user can also paste it manually if needed.
-  set_clipboard_text "$PROMPT_TEXT"
-  if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
-    show_accessibility_help
-    exit 1
+  # Check if the reference needs quotes (contains spaces or special chars)
+  if [[ "$ITEMPATH" =~ [[:space:]] ]] || [[ ! "$ITEMPATH" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
+    TEXT="@\"$ITEMPATH\""
+  else
+    TEXT="@$ITEMPATH"
   fi
-  sleep 0.2
+  if [ -n "$PROMPT_TEXT" ]; then
+    PROMPT_TEXT="${PROMPT_TEXT} "
+  fi
+  PROMPT_TEXT="${PROMPT_TEXT}${TEXT}"
+done
+
+# Copy the full prompt once so the user can also paste it manually if needed.
+set_clipboard_text "$PROMPT_TEXT"
+if ! osascript -e "tell application \"System Events\" to keystroke \"v\" using command down" >/dev/null 2>&1; then
   set_clipboard_text "$ORIGINAL_CLIPBOARD"
+  show_accessibility_help
+  exit 1
 fi
+sleep 0.2
+set_clipboard_text "$ORIGINAL_CLIPBOARD"

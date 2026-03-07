@@ -8,12 +8,18 @@ echo "==============================================================="
 echo ""
 
 # Check if workflows exist
-WORKFLOW1="$HOME/Library/Services/Open Claude with File.workflow"
+WORKFLOW1="$HOME/Library/Services/Open Claude with Selection.workflow"
 WORKFLOW2="$HOME/Library/Services/Open Claude Here.workflow"
+LEGACY_WORKFLOW="$HOME/Library/Services/Open Claude with File.workflow"
 
 FOUND=0
 
 if [ -d "$WORKFLOW1" ]; then
+    echo "Found: Open Claude with Selection.workflow"
+    FOUND=1
+fi
+
+if [ -d "$LEGACY_WORKFLOW" ]; then
     echo "Found: Open Claude with File.workflow"
     FOUND=1
 fi
@@ -43,7 +49,12 @@ echo "Removing Finder Services..."
 # Remove workflows
 if [ -d "$WORKFLOW1" ]; then
     rm -rf "$WORKFLOW1"
-    echo "[OK] Removed: Open Claude with File"
+    echo "[OK] Removed: Open Claude with Selection"
+fi
+
+if [ -d "$LEGACY_WORKFLOW" ]; then
+    rm -rf "$LEGACY_WORKFLOW"
+    echo "[OK] Removed legacy workflow: Open Claude with File"
 fi
 
 if [ -d "$WORKFLOW2" ]; then
