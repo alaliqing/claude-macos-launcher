@@ -156,6 +156,10 @@ for item in "${VALID_ITEMS[@]}"; do
     ITEMPATH="$item"
   fi
 
+  if [ -d "$item" ] && [ "${ITEMPATH%/}" = "$ITEMPATH" ]; then
+    ITEMPATH="${ITEMPATH}/"
+  fi
+
   # Check if the reference needs quotes (contains spaces or special chars)
   if [[ "$ITEMPATH" =~ [[:space:]] ]] || [[ ! "$ITEMPATH" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
     TEXT="@\"$ITEMPATH\""
