@@ -15,9 +15,10 @@
       <img src="https://img.shields.io/badge/finder%20services-5c6ac4" alt="Finder Services">
     </a>
   </p>
+  <p>Launch Claude from the Finder context menu without manually opening Terminal or typing file references.</p>
 </div>
 
-Launch Claude from the Finder context menu without manually opening Terminal or typing file references.
+---
 
 ## Features
 
