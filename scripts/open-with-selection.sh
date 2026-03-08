@@ -15,12 +15,27 @@ export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/
 CLAUDE=$(command -v claude 2>/dev/null || echo "claude")
 CLAUDE_NAME=$(basename "$CLAUDE")
 
+is_chinese_system_language() {
+  local primary_language
+
+  primary_language=$(defaults read -g AppleLanguages 2>/dev/null | tr -d '[:space:][:punct:]' | head -n 1)
+  [[ "$primary_language" == zh* ]]
+}
+
 show_accessibility_help() {
-  osascript -e 'display dialog "macos blocked selection auto-typing.\n\non first use, allow finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nthen run \"Open Claude with Selection\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
+  if is_chinese_system_language; then
+    osascript -e 'display dialog "macOS 阻止了自动输入选中内容。\n\n首次使用时，请先在这里允许“访达”：\n系统设置 > 隐私与安全性 > 辅助功能\n\n然后再次运行 \"Open Claude with Selection\"。" buttons {"好的"} default button 1 with icon caution with title "Claude Finder Services"'
+  else
+    osascript -e 'display dialog "macOS blocked selection auto-typing.\n\nOn first use, allow Finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nThen run \"Open Claude with Selection\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
+  fi
 }
 
 show_launch_error() {
-  osascript -e 'display dialog "failed to launch claude from finder.\n\nmake sure Terminal and the claude cli are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
+  if is_chinese_system_language; then
+    osascript -e 'display dialog "无法从访达启动 Claude。\n\n请确认 Terminal 和 Claude CLI 可用，然后再试一次。" buttons {"好的"} default button 1 with icon caution with title "Claude Finder Services"'
+  else
+    osascript -e 'display dialog "Failed to launch Claude from Finder.\n\nMake sure Terminal and the Claude CLI are available, then try again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
+  fi
 }
 
 set_clipboard_text() {
