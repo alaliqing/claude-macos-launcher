@@ -4,6 +4,19 @@
   <p><strong>English</strong> | <a href="./README.zh-CN.md">简体中文</a></p>
   <p><a href="https://github.com/alaliqing/claude-macos-launcher/blob/main/LICENSE"><img src="https://img.shields.io/github/license/alaliqing/claude-macos-launcher?color=6b7280" alt="License"></a> <a href="https://www.apple.com/macos/"><img src="https://img.shields.io/badge/macos-18181b" alt="macOS"></a> <a href="https://github.com/anthropics/claude-code"><img src="https://img.shields.io/badge/claude%20cli-1f6feb" alt="Claude CLI"></a> <a href="https://github.com/alaliqing/claude-macos-launcher"><img src="https://img.shields.io/badge/finder%20services-5c6ac4" alt="Finder Services"></a></p>
   <p>Launch Claude from Finder context menus and keyboard shortcuts without manually opening Terminal or typing file references.</p>
+
+  <table>
+    <tr>
+      <td align="center" width="50%">
+        <h3>Open Claude with Selection</h3>
+        <img src="./assets/open-with-selection.gif" alt="Open Claude with Selection" width="100%">
+      </td>
+      <td align="center" width="50%">
+        <h3>Open Claude Here</h3>
+        <img src="./assets/open-here.gif" alt="Open Claude Here" width="100%">
+      </td>
+    </tr>
+  </table>
 </div>
 
 ---
