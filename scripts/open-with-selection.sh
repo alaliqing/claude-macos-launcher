@@ -145,7 +145,11 @@ COUNT=${#VALID_ITEMS[@]}
 [ "$COUNT" -eq 0 ] && exit 0
 
 if [ "$COUNT" -gt 10 ]; then
-  osascript -e "display dialog \"Too many items selected (max 10). You selected $COUNT items.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Finder Services\""
+  if is_chinese_system_language; then
+    osascript -e "display dialog \"选中的项目过多（最多 10 个）。\n\n你当前选择了 $COUNT 个项目。\" buttons {\"好的\"} default button 1 with icon caution with title \"Claude Finder Services\""
+  else
+    osascript -e "display dialog \"Too many items selected (max 10).\n\nYou selected $COUNT items.\" buttons {\"OK\"} default button 1 with icon caution with title \"Claude Finder Services\""
+  fi
   exit 1
 fi
 
