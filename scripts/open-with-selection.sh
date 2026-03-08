@@ -24,9 +24,29 @@ is_chinese_system_language() {
 
 show_accessibility_help() {
   if is_chinese_system_language; then
-    osascript -e 'display dialog "macOS 阻止了自动输入选中内容。\n\n首次使用时，请先在这里允许“访达”：\n系统设置 > 隐私与安全性 > 辅助功能\n\n然后再次运行 \"Open Claude with Selection\"。" buttons {"好的"} default button 1 with icon caution with title "Claude Finder Services"'
+    osascript <<'APPLESCRIPT'
+set dialogResult to button returned of (display dialog "macOS 阻止了自动输入选中内容。\n\n首次使用时，请先在这里允许“访达”：\n系统设置 > 隐私与安全性 > 辅助功能\n\n然后再次运行 “Open Claude with Selection”。" buttons {"好的", "打开设置"} default button "打开设置" with icon caution with title "Claude Finder Services")
+
+if dialogResult is "打开设置" then
+  try
+    open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+  on error
+    tell application "System Settings" to activate
+  end try
+end if
+APPLESCRIPT
   else
-    osascript -e 'display dialog "macOS blocked selection auto-typing.\n\nOn first use, allow Finder in:\nSystem Settings > Privacy & Security > Accessibility\n\nThen run \"Open Claude with Selection\" again." buttons {"OK"} default button 1 with icon caution with title "Claude Finder Services"'
+    osascript <<'APPLESCRIPT'
+set dialogResult to button returned of (display dialog "macOS blocked selection auto-typing.\n\nOn first use, allow 'Finder' in:\nSystem Settings > Privacy & Security > Accessibility\n\nThen run \"Open Claude with Selection\" again." buttons {"OK", "Open Settings"} default button "Open Settings" with icon caution with title "Claude Finder Services")
+
+if dialogResult is "Open Settings" then
+  try
+    open location "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+  on error
+    tell application "System Settings" to activate
+  end try
+end if
+APPLESCRIPT
   fi
 }
 
