@@ -35,7 +35,15 @@ if [ $FOUND -eq 0 ]; then
 fi
 
 echo ""
-read -p "Remove these Finder Services? (y/N) " -n 1 -r
+if [ -t 0 ]; then
+    read -p "Remove these Finder Services? (y/N) " -n 1 -r
+elif [ -r /dev/tty ]; then
+    read -p "Remove these Finder Services? (y/N) " -n 1 -r < /dev/tty
+else
+    echo "ERROR: Interactive confirmation requires a terminal."
+    echo "Please download uninstall.sh and run it directly."
+    exit 1
+fi
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
